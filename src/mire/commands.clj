@@ -23,9 +23,10 @@
                            @(:items @*current-room*)))))
 
 (defn move
-  "\"♬ We gotta get out of this place... ♪\" Give a direction."
+  "\"♬ wtf! ♪\" Give a direction."
   [direction]
-  (dosync
+  (if (@*inventory* :keys)
+     (dosync
    (let [target-name ((:exits @*current-room*) (keyword direction))
          target (@rooms target-name)]
      (if target
@@ -35,7 +36,49 @@
                             (:inhabitants target))
          (ref-set *current-room* target)
          (look))
-       "You can't go that way."))))
+       "You can't go that way.")))
+  (dosync
+   (let [target-name ((:exits @*current-room*) (keyword direction))
+         target (@rooms target-name)]
+     (if (="open"((:status @*current-room*) (keyword direction)))
+     (if target
+       (do
+         (move-between-refs *player-name*
+                            (:inhabitants @*current-room*)
+                            (:inhabitants target))
+         (ref-set *current-room* target)
+         (look))
+       "You can't go that way.")
+       "This direction is block, U need keys!"
+       )))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;@(target :exits)
+
+(defn check-state
+  "You can close doors/directions."
+  [direction]
+  (dosync
+   (let [target-name ((:status @*current-room*) (keyword direction))
+        target-status (@*current-room* :status) ]
+        (do
+        (if (= "open" (@target-status (keyword direction))) (str "Aaaaaaand Open") (str "CLOSED"))
+          ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;(assoc @target-status (keyword direction) "close")
+ (defn change
+  "You can close doors/directions, if you only have keys!"
+  [direction]
+   (if (@*inventory* :keys)
+  (dosync
+   (let [target-name ((:status @*current-room*) (keyword direction))
+        target-status (@*current-room* :status) ]
+        (do
+        (if (= "open" (@target-status (keyword direction))) (alter target-status conj [(keyword direction) "close"])
+          (alter target-status conj [(keyword direction) "open"]))
+     )))"Maybe you forgot your keys somewhere?"))
+
+
 
 (defn teleport
   "If you have the teleport-panel, you can teleport to any room."
@@ -114,13 +157,13 @@
       (binding [*out* (player-streams inhabitant)]
         (println message)
         (println prompt)))
-    (str "You said " message)))
-	
-	
+    (str *player-name*" said " message)))
+
+
 (defn show-users-list
 	"Display name for each user being on the server"
 	[]
-		(println "The names of all the players being on the server now:") 
+		(println "The names of all the players being on the server now:")
 		(println "----------------------------------------------------")
 		(doseq [player @player-streams]
 			(println "\t" (first player)))
@@ -131,20 +174,20 @@
   []
   (join "\n" (map #(str (key %) ": " (:doc (meta (val %))))
                       (dissoc (ns-publics 'mire.commands)
-                              'execute 'commands))))		  
-							  
+                              'execute 'commands))))
+
 ;; Command data
 
 (def commands {"move" move,
-               "north" (fn [] (move :north)),
-               "south" (fn [] (move :south)),
-               "east" (fn [] (move :east)),
-               "west" (fn [] (move :west)),
+              ; "north" (fn [] (move :north)),
+              ; "south" (fn [] (move :south)),
+               ;"east" (fn [] (move :east)),
+               ;"west" (fn [] (move :west)),
                "teleport" teleport,
-               "closet" (fn [] (teleport :closet)),
-               "hallway" (fn [] (teleport :hallway)),
-               "promenade" (fn [] (teleport :promenade)),
-               "start" (fn [] (teleport :start)),
+              ; "closet" (fn [] (teleport :closet)),
+              ; "hallway" (fn [] (teleport :hallway)),
+               ;"promenade" (fn [] (teleport :promenade)),
+               ;"start" (fn [] (teleport :start)),
                "grab" grab
                "discard" discard
                "inventory" inventory
@@ -153,7 +196,9 @@
                "say" say
                "help" help
                "message" message
-			   "show-users-list" show-users-list})
+			         "show-u" show-users-list
+               "check" check-state
+               "change" change})
 
 ;; Command handling
 
