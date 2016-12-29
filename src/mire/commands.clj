@@ -176,6 +176,21 @@
                       (dissoc (ns-publics 'mire.commands)
                               'execute 'commands))))
 
+
+
+(defn show-name
+  []
+  "See what is your name."
+
+  (str *player-name*))
+
+(defn change-name
+   [& line]
+  (let [line1 (join " " line)]
+  (dosync
+    (set! *player-name* line1)
+    (str "Your name now is: " line1))))
+
 ;; Command data
 
 (def commands {"move" move,
@@ -198,7 +213,11 @@
                "message" message
 			         "show-u" show-users-list
                "check" check-state
-               "change" change})
+               "change" change
+                "show-name" show-name
+               "change-name" change-name
+			   "show-users-list" show-users-list})
+
 
 ;; Command handling
 
